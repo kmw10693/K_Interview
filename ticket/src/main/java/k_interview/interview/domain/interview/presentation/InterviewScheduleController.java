@@ -7,6 +7,7 @@ import k_interview.interview.domain.interview.service.InterviewReservationServic
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -18,15 +19,16 @@ import java.util.List;
 public class InterviewScheduleController {
 
     private final InterviewReservationService scheduleService;
+    private final KafkaTemplate<String, InterviewReservationRequest> kafkaTemplate;
 
     @GetMapping("/schedules")
     public ResponseEntity<List<InterviewScheduleResponse>> getSchedules(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) String search) {
         return ResponseEntity.ok(scheduleService.getSchedules(date, search));
     }
 
-    @PostMapping
-    public ResponseEntity<InterviewReservationResponse> reserveInterview(@RequestBody InterviewReservationRequest request) {
-        InterviewReservationResponse response = scheduleService.reserveSlot(request);
-        return ResponseEntity.ok(response);
+    @PostMapping("/reserve")
+    public ResponseEntity<String> reserveInterview(@RequestBody InterviewReservationRequest request) {
+        kafkaTemplate.send("interview-reservation-topic", request);
+        return ResponseEntity.accepted().body("면접 예약 요청이 접수되었습니다.");
     }
 }

@@ -2,8 +2,7 @@
 동시 사용자 트래픽 환경에서의 면접 예약 서비스
 
 ## 주요 기능 아키텍처
-<img width="761" alt="image" src="https://github.com/user-attachments/assets/ea202772-d4af-4573-937b-f3aab9b8816d" />
-
+<img width="761" alt="image" src="https://github.com/user-attachments/assets/ca39a1bf-5333-4d89-83a1-03512d0bfecf" />
 
 ## 기술 스택
 

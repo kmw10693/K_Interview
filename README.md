@@ -9,7 +9,7 @@ TPS 10,000명을 목표로 하는 대량 트래픽 환경에서의 티켓 예매
 
 - **Backend**: Spring Boot + Spring Security + JPA + Redisson
 - **Database**: PostgreSQL
-- **Cache & Lock**: Redis + Redisson, Kafka
+- **Cache & Lock**: Redis + Redisson, RabbitMQ
 - **Logging & Monitoring**: ELK (ElasticSearch, Logstash, Kibana)
 - **Infra**: Docker + Nginx + AWS EC2
 
@@ -17,8 +17,8 @@ TPS 10,000명을 목표로 하는 대량 트래픽 환경에서의 티켓 예매
 
 - 대량 트래픽 환경에서의 **티켓 예매 동시성 문제 해결**
 - 성능 병목 지점 파악 및 **지표 기반 개선**
-- **비동기 처리 / Message Queue 사용
-- **JMeter를 이용한 부하 테스트
+- 비동기 처리 / Message Queue 사용
+- JMeter를 이용한 부하 테스트
 
 ## 1. **공연/이벤트 관리**
 

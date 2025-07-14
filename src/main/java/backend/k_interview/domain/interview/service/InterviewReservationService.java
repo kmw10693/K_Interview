@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static backend.k_interview.domain.interview.domain.InterviewStatus.*;
+import static backend.k_interview.domain.interview.domain.InterviewStatus.RESERVED;
 
 @Transactional(readOnly = true)
 @Service
@@ -39,24 +39,17 @@ public class InterviewReservationService {
 
     private static final String QUEUE_NAME = "interview.reserved";
 
+    @Transactional
     public InterviewReservationResponse reserveSlot(InterviewReservationRequest reservationRequest) {
-        String lockKey = "lock:slot" + reservationRequest.slotId();
+        String lockKey = "lock:slot:" + reservationRequest.slotId();
 
-        // Redisson을 이용한 Spin lock
         RLock lock = redissonClient.getLock(lockKey);
-
         boolean isLocked = false;
-        int maxAttempts = 10;
-        int attempt = 0;
 
         try {
-            while (attempt < maxAttempts) {
-                isLocked = lock.tryLock(0, 5, TimeUnit.SECONDS);
-                if (isLocked) break;
+            // Redisson Pub/Sub 기반 분산 락 획득 시도 (최대 5초 대기, 5초 유지)
+            isLocked = lock.tryLock(5, 5, TimeUnit.SECONDS);
 
-                Thread.sleep(100);
-                attempt++;
-            }
             if (!isLocked) {
                 throw new IllegalStateException("다른 사용자가 같은 시간대 면접을 예약 중입니다. 잠시 후 다시 시도해주세요.");
             }
@@ -84,13 +77,14 @@ public class InterviewReservationService {
 
             reservationRepository.save(reservation);
 
-            // 메일 발송 및 문자 발행 시 메시지 큐 발행
+            // 메시지 큐 발행
             InterviewReservedEvent event = InterviewReservedEvent.builder()
                     .reservationId(reservation.getId())
                     .memberId(member.getId())
                     .email(member.getEmail())
                     .time(slot.getTime())
                     .build();
+
             rabbitTemplate.convertAndSend(QUEUE_NAME, event);
 
             return new InterviewReservationResponse(reservation.getId(), "면접 예약이 완료되었습니다.");
@@ -106,16 +100,13 @@ public class InterviewReservationService {
     }
 
     public List<InterviewScheduleResponse> getSchedules(LocalDate date, String search) {
-
         return interviewScheduleRepository.findByDateAndInterviewName(date, search).stream()
-                .map(s -> {
-                    return new InterviewScheduleResponse(
-                            s.getId(),
-                            s.getInterviewName(),
-                            s.getLocation(),
-                            s.getDate()
-                    );
-                })
+                .map(s -> new InterviewScheduleResponse(
+                        s.getId(),
+                        s.getInterviewName(),
+                        s.getLocation(),
+                        s.getDate()
+                ))
                 .toList();
     }
 }
